@@ -1,0 +1,39 @@
+% Table 1: Main Results
+
+\begin{table}[h]
+\centering
+\caption{Performance comparison on L1000 dataset (10,000 test samples)}
+\label{tab:main_results}
+\begin{tabular}{lcccccc}
+\hline
+\textbf{Method} & \textbf{Hit@1} & \textbf{Hit@5} & \textbf{Hit@10} & \textbf{MRR} & \textbf{nDCG@10} & \textbf{Params} \\
+\hline
+Random          & 0.005\% & 0.025\% & 0.05\%  & -      & -      & -    \\
+Learnable Emb   & 16.94\% & 38\%    & 52\%    & 0.28   & 0.35   & 3.5M \\
+\textbf{Morgan FP (Ours)} & \textbf{39.38\%} & \textbf{74.19\%} & \textbf{85.23\%} & \textbf{0.5479} & \textbf{0.6157} & \textbf{1.5M} \\
+\hline
+\textbf{Improvement} & \textbf{+132\%} & \textbf{+95\%} & \textbf{+64\%} & \textbf{+96\%} & \textbf{+76\%} & \textbf{-58\%} \\
+\hline
+\end{tabular}
+\end{table}
+
+
+% Table 2: Model Comparison
+
+\begin{table}[h]
+\centering
+\caption{Model characteristics comparison}
+\label{tab:model_comparison}
+\begin{tabular}{lcc}
+\hline
+\textbf{Property} & \textbf{Learnable Embedding} & \textbf{Morgan FP (Ours)} \\
+\hline
+Parameters              & 3.5M          & 1.5M (-58\%)      \\
+Chemical information    & \xmark        & \checkmark        \\
+Zero-shot capability    & \xmark        & \checkmark        \\
+Training time (epoch)   & 25s           & 25s               \\
+Hit@1                   & 16.94\%       & 39.38\% (+132\%)  \\
+Chemical-Bio correlation & $r \approx 0$ & $r = 0.38$ ($p < 10^{-35}$) \\
+\hline
+\end{tabular}
+\end{table}
