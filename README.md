@@ -1,321 +1,66 @@
-# Integrating Chemical Structure and Transcriptional Responses via Dual-Encoder Contrastive Learning for Drug Repurposing
+# Dual-Encoder Drug Repurposing
 
-Official implementation of "Integrating Chemical Structure and Transcriptional Responses via Dual-Encoder Contrastive Learning for Drug Repurposing"
+Code for *Integrating Chemical Structure and Transcriptional Responses via Dual-Encoder Contrastive Learning for Drug Repurposing* (Hyunseung Kong, Inyoung Kim, Byoung-Tak Zhang).
 
-**Authors:** Hyunseung Kong¹, Inyoung Kim², and Byoung-Tak Zhang¹,³
+The model maps L1000 expression profiles (978 landmark genes) and drug-condition inputs (a 2,048-bit Morgan fingerprint with cell line, dose and time) into a shared 256-dimensional space trained with a bidirectional InfoNCE loss. The repository contains the encoder comparison, the evaluation on compounds absent from training, and the analysis of chemical similarity in the learned drug embeddings.
 
-¹Interdisciplinary Program in Bioinformatics, Seoul National University
-²Department of Defense Science, Korea National Defense University
-³Department of Computer Science, Seoul National University
-
-## Abstract
-
-Drug repurposing offers a promising path to accelerate therapeutic discovery by finding new uses for existing compounds. We present a contrastive learning framework that combines chemical structure information via Morgan fingerprints with transcriptomic profiles to enable more effective drug repurposing. Using the L1000 dataset containing 109,721 gene expression experiments across 20,401 unique compounds, our dual-encoder architecture learns to align chemical and biological representations in a shared embedding space.
-
-**Key Results:**
-- **39.38% top-1** and **85.23% top-10** retrieval accuracy (2.3× improvement over learnable embeddings)
-- **10.87% top-10** zero-shot accuracy on unseen drugs (217× better than random)
-- **Spearman correlation r=0.38** between chemical and biological similarity (p<10⁻³⁵)
-- **58% fewer parameters** (1.5M vs 3.5M) while achieving superior performance
-
-## Highlights
-
-✨ **State-of-the-art Performance**
-- 85.23% top-10 accuracy for practical drug repurposing screens
-- 2.3-fold improvement over learnable embeddings without chemical structure
-
-🔬 **True Zero-Shot Generalization**
-- Predicts biological responses for completely unseen compounds
-- 217-fold better than random chance on novel drugs
-
-🧬 **Validated Structure-Activity Learning**
-- Significant correlation between chemical and biological similarity
-- Captures activity cliffs and pharmacophore equivalence
-
-⚡ **Efficient Architecture**
-- 58% parameter reduction through chemical inductive bias
-- Fast training (~25 seconds/epoch on RTX 4060)
-
-## Model Architecture
+## Repository layout
 
 ```
-┌─────────────────┐
-│ Expression [978]│──→ [512] ──→ [256] ──→ z_expr
-└─────────────────┘                         │
-                                            ↓
-                                    ┌──────────────┐
-                                    │   Cosine     │
-                                    │  Similarity  │──→ InfoNCE Loss
-                                    └──────────────┘
-┌─────────────────┐                         ↑
-│ Morgan FP [2048]│                         │
-│ + Context       │──→ [256] ──────────→ z_drug
-└─────────────────┘
+src/        data loading, encoders, training and evaluation
+scripts/    one script per experiment, plus figure and table generation
+results/    result files behind every number in the paper
+models/     embedding_model.pt, the checkpoint analysed in Figure 5
+figures/    Figures 1-5 (PNG and PDF)
+data/       input files from GEO GSE92742 (see data/README.md)
 ```
-
-**Dual-Encoder Design:**
-- Expression Encoder: 978 → 512 → 256
-- Drug Encoder: 2048 (Morgan FP) + context → 256
-- Bidirectional InfoNCE contrastive loss
-- L2-normalized embeddings for angular similarity
 
 ## Installation
 
-### Requirements
-- Python 3.10+
-- PyTorch 2.0+ with CUDA 12.1
-- RDKit 2023.3.1+
-- 16GB RAM (32GB recommended)
-- NVIDIA GPU (optional but recommended)
-
-### Setup
+Tested with Python 3.11 and PyTorch 2.5.1 (CUDA 12.1) on one NVIDIA RTX 4060 (8 GB).
 
 ```bash
-# Clone repository
-git clone https://github.com/YOUR_USERNAME/l1000-drug-repurposing.git
-cd l1000-drug-repurposing
-
-# Install uv package manager
-pip install uv
-
-# Install dependencies
-uv sync
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cu121
+pip install -r requirements.txt
 ```
 
-See [INSTALL.md](INSTALL.md) for detailed installation instructions.
+## Data
 
-## Quick Start
-
-### 1. Download L1000 Data
+Download the GSE92742 files listed in [data/README.md](data/README.md) into `data/`, then extract the compound SMILES:
 
 ```bash
-cd data/
-
-# Download from GEO GSE92742
-wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE92nnn/GSE92742/suppl/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx.gz
-wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE92nnn/GSE92742/suppl/GSE92742_Broad_LINCS_gene_info.txt.gz
-wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE92nnn/GSE92742/suppl/GSE92742_Broad_LINCS_sig_info.txt.gz
-wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE92nnn/GSE92742/suppl/GSE92742_Broad_LINCS_pert_info.txt.gz
-wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE92nnn/GSE92742/suppl/GSE92742_Broad_LINCS_cell_info.txt.gz
-
-# Extract
-gunzip *.gz
-cd ..
+python scripts/extract_smiles.py
 ```
 
-### 2. Extract SMILES
+The first experiment reads the GCTX file (a few minutes) and writes `cache/l1000_basics.pkl` (about 630 MB); later runs reuse it. It contains 109,721 small-molecule signatures at 24 h for 20,401 compounds and 30 cell lines.
 
-```bash
-uv run python scripts/extract_smiles.py
-```
+## Reproducing the paper
 
-### 3. Train Model
+| Paper item | Command | Output |
+|---|---|---|
+| Table 1, Table 3, Figure 2, Supplementary Table S1 | `python scripts/chemberta_embeddings.py` then `python scripts/encoder_ablation.py` | `results/encoder_ablation.pkl` |
+| Table 2, Figures 3 and 4, Supplementary Table S3 | `python scripts/zero_shot.py` | `results/zero_shot.pkl` |
+| Supplementary Table S4 | `python scripts/zero_shot_multisplit.py` | `results/zero_shot_multisplit.pkl` |
+| Section 3.3, Figure 5 | `python scripts/embedding_similarity.py` | `results/embedding_similarity.pkl` |
+| Section 2.1, Supplementary Table S2 | `python scripts/chemical_space.py` | `results/chemical_space.pkl` |
+| Model analysed in Figure 5 | `python scripts/train_embedding_model.py` | `models/embedding_model_retrained.pt` |
+| Figures 1-5 | `python scripts/make_figures.py` | `figures/` |
+| All tables | `python scripts/summarize_results.py` | printed to the console |
 
-```bash
-uv run python train.py
-```
+`make_figures.py` and `summarize_results.py` read only `results/`, so they run without the L1000 data. The experiment scripts overwrite the files in `results/`; `git checkout results/` restores the published versions.
 
-**Training time:** ~4 minutes (10 epochs, RTX 4060)
+Approximate run times on the GPU above: about 10 s per encoder and seed (30 s for the GCN), 10 minutes per split for the zero-shot evaluation (most of it spent on Tanimoto similarities), and 1 minute for the embedding-similarity analysis.
 
-### 4. Evaluate
+## Notes
 
-```bash
-# Standard evaluation
-uv run python scripts/comprehensive_evaluation.py --mode metrics
-
-# Zero-shot evaluation
-uv run python scripts/zero_shot_evaluation.py --epochs 10
-```
-
-### 5. Generate Figures
-
-```bash
-uv run python scripts/generate_paper_figures.py
-```
-
-## Results
-
-### Standard Evaluation (10K test samples)
-
-| Method | Hit@1 | Hit@5 | Hit@10 | MRR | nDCG@10 | Params |
-|--------|-------|-------|--------|-----|---------|--------|
-| Random | 0.01% | 0.03% | 0.05% | - | - | - |
-| Learnable Emb | 16.94% | 38% | 52% | 0.28 | 0.35 | 3.5M |
-| **Ours (Morgan FP)** | **39.38%** | **74.19%** | **85.23%** | **0.5479** | **0.6157** | **1.5M** |
-| **Improvement** | **+132%** | **+95%** | **+64%** | **+96%** | **+76%** | **-58%** |
-
-### Zero-Shot Evaluation (Unseen Drugs)
-
-| Metric | Performance | vs Random |
-|--------|-------------|-----------|
-| Hit@1  | 1.8% | 350× |
-| Hit@5  | 6.5% | 262× |
-| Hit@10 | 10.9% | **217×** |
-| Hit@20 | 17.5% | 175× |
-| Hit@50 | 31.5% | 63× |
-| MRR    | 0.0520 | - |
-
-**Zero-shot setting:** Model trained on 16,321 drugs, tested on 4,080 completely unseen drugs.
-
-### Chemical-Biological Correlation
-
-- **Spearman r = 0.381** (p < 1×10⁻³⁵)
-- Strong correlation between Tanimoto (chemical) and cosine (embedding) similarity
-- Captures activity cliffs and structure-activity relationships
-
-## Key Features
-
-### 1. Morgan Fingerprint Integration
-- Fixed 2048-bit circular fingerprints (radius=2)
-- Encodes established structure-activity principles
-- Enables zero-shot prediction for novel compounds
-
-### 2. Contrastive Learning
-- Bidirectional InfoNCE loss
-- Learnable temperature parameter (τ≈0.07)
-- Pulls together matching expression-drug pairs
-- Pushes apart non-matching pairs
-
-### 3. Zero-Shot Capability
-- Predicts biological responses for unseen compounds
-- Only requires SMILES structure (no training data needed)
-- Practical for virtual screening of large libraries
-
-### 4. Validated Learning
-- Significant chemical-biological correlation (r=0.38)
-- Activity cliffs captured in embedding space
-- Consistent with medicinal chemistry principles
-
-## Project Structure
-
-```
-.
-├── src/
-│   ├── encoders.py          # Dual-encoder architecture
-│   ├── data_loader.py       # L1000 data loading & preprocessing
-│   ├── dataset.py           # PyTorch dataset with fingerprints
-│   └── evaluation.py        # Retrieval metrics & correlation analysis
-│
-├── scripts/
-│   ├── extract_smiles.py              # Extract SMILES from L1000
-│   ├── comprehensive_evaluation.py    # Full evaluation pipeline
-│   ├── zero_shot_evaluation.py        # Zero-shot generalization test
-│   └── generate_paper_figures.py      # Generate all figures
-│
-├── train.py                 # Training script
-├── pyproject.toml           # Dependencies
-├── README.md
-├── INSTALL.md              # Detailed installation guide
-├── PAPER.md                # Paper information & citation
-└── LICENSE
-```
-
-## Citation
-
-If you use this code in your research, please cite:
-
-```bibtex
-@article{kong2024integrating,
-  title={Integrating Chemical Structure and Transcriptional Responses via Dual-Encoder Contrastive Learning for Drug Repurposing},
-  author={Kong, Hyunseung and Kim, Inyoung and Zhang, Byoung-Tak},
-  journal={In preparation},
-  year={2024}
-}
-```
-
-## Dataset
-
-**L1000 (LINCS Program)**
-- Source: [GEO GSE92742](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE92742)
-- Samples: 109,721 gene expression profiles
-- Compounds: 20,401 unique drugs
-- Genes: 978 landmark genes
-- Cell lines: 30 cancer cell lines
-
-**Preprocessing:**
-- Filter: compound treatments (trt_cp), 24h timepoint
-- Morgan fingerprints: radius=2, 2048-bit
-- Split: 80-10-10 (train-val-test) or cold-drug split
-
-## Key Methods
-
-### Morgan Fingerprints
-- **Circular fingerprints** capturing local substructures
-- **Radius 2, 2048 bits** for optimal coverage
-- **Fixed representation** provides chemical inductive bias
-- **RDKit implementation** with standardized parameters
-
-### Contrastive Learning
-- **Bidirectional InfoNCE loss** for symmetric retrieval
-- **L2-normalized embeddings** for angular similarity
-- **In-batch negatives** for computational efficiency
-- **Temperature scaling** (learnable τ≈0.07)
-
-### Evaluation
-- **Hit@k:** Percentage of correct matches in top-k
-- **MRR:** Mean reciprocal rank (emphasizes top results)
-- **nDCG@10:** Ranking quality with position weighting
-- **Chemical-biological correlation:** Tanimoto vs cosine similarity
-
-## Performance Insights
-
-### Why Morgan Fingerprints Work Better
-
-1. **Chemical Inductive Bias**
-   - Encodes century of medicinal chemistry knowledge
-   - Captures structural similarity principles
-   - Regularizes learning toward meaningful patterns
-
-2. **Parameter Efficiency**
-   - No need to learn 20K separate embeddings
-   - 58% fewer parameters than learnable approach
-   - Better generalization with less overfitting
-
-3. **Zero-Shot Capability**
-   - Fixed representation works for any molecule
-   - No retraining needed for new compounds
-   - Practical for virtual screening applications
-
-### Practical Utility
-
-- **85% top-10 accuracy** suitable for experimental validation
-- **Typical workflow:** Computational screen → top 10 candidates → wet-lab validation
-- **Cost reduction:** 10× more efficient than random screening
-- **Speed:** Hours (computational) vs months (traditional)
-
-## Limitations & Future Work
-
-### Current Limitations
-
-1. **Landmark genes only (978/20,000)** - may miss signals
-2. **Transcriptomics only** - could integrate proteomics/metabolomics
-3. **Computational validation** - requires wet-lab confirmation
-4. **Zero-shot gap** - lower performance than standard (expected)
-
-### Future Directions
-
-- **Richer chemical representations:** 3D conformers, quantum properties, GNNs
-- **Multi-modal integration:** Morphology, proteomics, metabolomics
-- **Interpretability:** Attention mechanisms, feature attribution
-- **Meta-learning:** Optimize for few-shot generalization
-- **External validation:** CTRP, GDSC, clinical data
-
-## Contact
-
-- **Hyunseung Kong:** hskong@snu.ac.kr
-- **GitHub Issues:** [Report bugs/questions](https://github.com/YOUR_USERNAME/l1000-drug-repurposing/issues)
+- With a fixed seed, the Morgan, learnable-embedding, chemCPA-style and ChemBERTa encoders reproduce the reported values exactly on this hardware and software. The GCN uses non-deterministic CUDA scatter operations in PyTorch Geometric, so its values vary slightly between runs (Hit@1 2.33-2.38% for seed 42).
+- `models/embedding_model.pt` was trained without a fixed seed. `scripts/train_embedding_model.py` trains a comparable model but not an identical one.
+- The 75 compounds without a parseable SMILES receive an all-zero Morgan fingerprint and are excluded from the canonical-SMILES split.
+- Dose bins use the leading number of `pert_idose`; the unit is not converted.
+- In the zero-shot evaluation, the rank of a query is the number of candidates with a strictly higher similarity than its own drug-condition embedding.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
-
-## Acknowledgments
-
-- **L1000/LINCS Program:** NIH LINCS Program
-- **RDKit:** Open-source cheminformatics toolkit
-- **PyTorch:** Deep learning framework
-
----
-
-**Status:** Research code for paper submission
-**Last Updated:** 2024-10-10
+MIT (see [LICENSE](LICENSE)).

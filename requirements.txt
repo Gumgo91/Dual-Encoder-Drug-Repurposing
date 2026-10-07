@@ -1,0 +1,10 @@
+torch==2.5.1
+numpy==2.3.3
+pandas==2.3.3
+scipy==1.16.2
+rdkit==2025.9.1
+cmapPy==4.0.1
+tqdm==4.67.1
+matplotlib==3.10.6
+torch-geometric==2.7.0
+transformers==5.7.0
