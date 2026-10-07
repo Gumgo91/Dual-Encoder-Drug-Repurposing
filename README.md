@@ -2,6 +2,8 @@
 
 Code for *Integrating Chemical Structure and Transcriptional Responses via Dual-Encoder Contrastive Learning for Drug Repurposing* (Hyunseung Kong, Inyoung Kim, Byoung-Tak Zhang).
 
+The paper has been accepted in *Chemical Biology & Drug Design*. This page will be updated with the full reference once it is published.
+
 Connectivity mapping ranks compounds by comparing transcriptional signatures, but it does not use molecular structure. This work aligns the two: an expression encoder maps L1000 profiles (978 landmark genes) and a drug encoder maps a 2,048-bit Morgan fingerprint together with cell line, dose and time into a shared 256-dimensional space, trained with a bidirectional InfoNCE loss. The data are 109,721 L1000 signatures of 20,401 compounds. The trained model ranks reference compounds for an expression profile, or expression signatures for a compound under given conditions.
 
 ![Dual-encoder architecture](figures/figure1_architecture.png)
@@ -77,7 +79,7 @@ Approximate run times on the GPU above: about 10 s per encoder and seed (30 s fo
 
 ## Citation
 
-Kong H, Kim I, Zhang B-T. Integrating Chemical Structure and Transcriptional Responses via Dual-Encoder Contrastive Learning for Drug Repurposing. Accepted for publication; the full reference will be added when the article is online.
+Kong H, Kim I, Zhang B-T. Integrating Chemical Structure and Transcriptional Responses via Dual-Encoder Contrastive Learning for Drug Repurposing. *Chemical Biology & Drug Design* (accepted). Volume, pages and DOI will be added after publication.
 
 ## License
 
