@@ -62,10 +62,10 @@ The first experiment reads the GCTX file (a few minutes) and writes `cache/l1000
 | Section 3.3, Figure 5 | `python scripts/embedding_similarity.py` | `results/embedding_similarity.pkl` |
 | Section 2.1, Supplementary Table S2 | `python scripts/chemical_space.py` | `results/chemical_space.pkl` |
 | Model analysed in Figure 5 | `python scripts/train_embedding_model.py` | `models/embedding_model_retrained.pt` |
-| Figures 1-5 | `python scripts/make_figures.py` | `figures/` |
+| Figures 2-5 | `python scripts/make_figures.py` | `figures/` |
 | All tables | `python scripts/summarize_results.py` | printed to the console |
 
-`make_figures.py` and `summarize_results.py` read only `results/`, so they run without the L1000 data. The experiment scripts overwrite the files in `results/`; `git checkout results/` restores the published versions.
+`make_figures.py` and `summarize_results.py` read only `results/`, so they run without the L1000 data. Figure 1 is a schematic and is stored as an image. The experiment scripts overwrite the files in `results/`; `git checkout results/` restores the published versions.
 
 Approximate run times on the GPU above: about 10 s per encoder and seed (30 s for the GCN), 10 minutes per split for the zero-shot evaluation (most of it spent on Tanimoto similarities), and 1 minute for the embedding-similarity analysis.
 

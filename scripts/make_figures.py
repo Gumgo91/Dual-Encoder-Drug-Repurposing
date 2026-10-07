@@ -1,4 +1,7 @@
-"""Draw Figures 1-5 of the paper from the files in results/ (written to figures/)."""
+"""Draw Figures 2-5 of the paper from the files in results/ (written to figures/).
+
+Figure 1 is a schematic stored as figures/figure1_architecture.png.
+"""
 
 import pickle
 import sys
@@ -7,7 +10,7 @@ from pathlib import Path
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Patch
+from matplotlib.patches import Patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.paths import FIGURES_DIR, RESULTS_DIR  # noqa: E402
@@ -29,48 +32,6 @@ def save(fig_name, **kwargs):
         plt.savefig(FIGURES_DIR / f"{fig_name}.{ext}", **kwargs)
     plt.close()
     print("  wrote", FIGURES_DIR / f"{fig_name}.png")
-
-
-def fig1():
-    """Dual-encoder architecture."""
-    fig, ax = plt.subplots(figsize=(16.4, 5.0))
-    ax.set_xlim(0, 16.4)
-    ax.set_ylim(0.55, 4.95)
-    ax.axis("off")
-
-    def node(x, y, width, height, label, face, edge, fontsize=18):
-        patch = FancyBboxPatch((x, y), width, height, boxstyle="round,pad=0.04,rounding_size=0.14",
-                               linewidth=1.8, facecolor=face, edgecolor=edge, zorder=2)
-        ax.add_patch(patch)
-        ax.text(x + width / 2, y + height / 2, label, ha="center", va="center", fontsize=fontsize,
-                weight="semibold", linespacing=1.08, color="#111111", zorder=3)
-        return patch, (x + width / 2, y + height / 2)
-
-    def connector(source, target):
-        arrow = FancyArrowPatch(source[1], target[1], patchA=source[0], patchB=target[0],
-                                arrowstyle="-|>", linewidth=1.7, color="#3F3F3F",
-                                mutation_scale=17, shrinkA=2, shrinkB=2, zorder=1)
-        ax.add_patch(arrow)
-
-    top_y, bottom_y = 3.55, 0.95
-    l1000 = node(0.10, top_y, 3.00, 1.15, "L1000 profile\n978 genes", "#E5F2F8", "#2C6E91", fontsize=20)
-    morgan = node(0.10, bottom_y, 3.00, 1.40, "Morgan fingerprint\n2,048-bit + context\n(cell · dose · time)",
-                  "#FBE9DE", "#A6492D", fontsize=17.5)
-    expr_encoder = node(3.75, top_y, 3.80, 1.15, "Expression encoder\n978 → 512 → 256",
-                        "#C9E3EE", "#2C6E91", fontsize=20)
-    drug_encoder = node(3.75, bottom_y, 3.80, 1.40, "Drug encoder\nfingerprint + context\n→ 256",
-                        "#F2C1B3", "#A6492D", fontsize=19)
-    z_expr = node(8.25, top_y, 3.20, 1.15, "z_expr\n256-D · normalized", "#DDF1D7", "#3B7D34", fontsize=19)
-    z_drug = node(8.25, bottom_y, 3.20, 1.40, "z_drug\n256-D · normalized", "#DDF1D7", "#3B7D34", fontsize=19)
-    objective = node(12.15, 2.00, 4.05, 1.55, "Cosine-similarity\nmatrix\nBidirectional InfoNCE",
-                     "#F5E9B9", "#8B741E", fontsize=19)
-    for source, target in ((l1000, expr_encoder), (morgan, drug_encoder), (expr_encoder, z_expr),
-                           (drug_encoder, z_drug), (z_expr, objective), (z_drug, objective)):
-        connector(source, target)
-
-    fig.suptitle("Dual-encoder contrastive learning", fontsize=22, weight="semibold", y=0.96)
-    fig.subplots_adjust(left=0.015, right=0.985, bottom=0.035, top=0.88)
-    save("figure1_architecture")
 
 
 def fig2():
@@ -205,7 +166,7 @@ def fig5():
 
 def main():
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
-    for fig in (fig1, fig2, fig3, fig4, fig5):
+    for fig in (fig2, fig3, fig4, fig5):
         fig()
 
 
