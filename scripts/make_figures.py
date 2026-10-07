@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.paths import FIGURES_DIR, RESULTS_DIR  # noqa: E402
@@ -74,29 +74,37 @@ def fig1():
 
 
 def fig2():
-    """Encoder comparison: mean +/- SE over three training seeds."""
+    """Encoder comparison: mean +/- SE over three training seeds (drawn at print width)."""
     runs = load("encoder_ablation.pkl")
     methods = ["learnable", "chemcpa", "gcn_finlayson", "chemberta", "morgan_v1"]
-    labels = ["Learnable-embedding\nbaseline", "chemCPA*-AE", "Finlayson*-style\nGCN",
-              "frozen\nChemBERTa-77M", "Morgan fingerprint\n(2,048-bit)"]
+    labels = ["Learnable-embedding baseline", "chemCPA*-AE", "Finlayson*-style GCN",
+              "Frozen ChemBERTa-77M", "Morgan fingerprint (2,048-bit)"]
     colors = ["#4477AA", "#CC6677", "#DDCC77", "#66CCEE", "#EE7733"]
-    fig, axes = plt.subplots(1, 2, figsize=(15, 5.6))
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.3))
+    x = np.arange(len(methods))
     for ax, key, title in zip(axes, ["hit@1", "hit@10"], ["Hit@1", "Hit@10"]):
-        stats = []
-        for m in methods:
-            values = np.array([runs[f"{m}_seed{s}"][key] for s in (42, 7, 11)])
-            stats.append((values.mean(), values.std(ddof=1) / np.sqrt(len(values))))
-        x = np.arange(len(methods))
-        ax.bar(x, [s[0] for s in stats], yerr=[s[1] for s in stats], capsize=5, color=colors)
-        ax.set_xticks(x)
-        ax.set_xticklabels(labels, fontsize=9.2)
-        ax.set_ylabel(f"{title} (%)")
-        ax.set_title(f"{title} (3-seed mean ± SE)")
+        values = np.array([[runs[f"{m}_seed{s}"][key] for s in (42, 7, 11)] for m in methods])
+        mean = values.mean(axis=1)
+        se = values.std(axis=1, ddof=1) / np.sqrt(values.shape[1])
+        ax.bar(x, mean, yerr=se, capsize=2.5, color=colors, width=0.72, error_kw={"linewidth": 0.8})
+        top = (mean + se).max()
+        for xi, m, s in zip(x, mean, se):
+            ax.text(xi, m + s + 0.02 * top, f"{m:.1f}", ha="center", va="bottom", fontsize=7.5)
+        ax.set_ylim(0, top * 1.15)
+        ax.set_xticks([])
+        ax.set_ylabel(f"{title} (%)", fontsize=9)
+        ax.set_title(f"{title} (3-seed mean ± SE)", fontsize=9.5)
+        ax.tick_params(axis="y", labelsize=8)
         ax.grid(axis="y", alpha=0.3)
-    fig.suptitle("Encoder ablation under signature-level retrieval", fontsize=17, y=0.985)
-    fig.text(0.5, 0.925, "10,000 candidates · 3 seeds", ha="center", va="center", fontsize=11, color="#555555")
-    fig.subplots_adjust(left=0.055, right=0.99, bottom=0.18, top=0.79, wspace=0.13)
-    save("figure2_encoder_ablation", bbox_inches="tight")
+        ax.spines[["top", "right"]].set_visible(False)
+    handles = [Patch(facecolor=c, label=lab) for c, lab in zip(colors, labels)]
+    fig.legend(handles=handles, loc="lower center", ncol=3, fontsize=8, frameon=False,
+               columnspacing=1.2, handlelength=1.2, bbox_to_anchor=(0.5, 0.0))
+    fig.suptitle("Encoder ablation under signature-level retrieval", fontsize=10.5, y=0.985)
+    fig.text(0.5, 0.905, "10,000 held-out signatures · 3 seeds", ha="center", va="center",
+             fontsize=8, color="#555555")
+    fig.subplots_adjust(left=0.075, right=0.99, bottom=0.22, top=0.80, wspace=0.28)
+    save("figure2_encoder_ablation")
 
 
 def fig3():
@@ -157,34 +165,41 @@ def fig4():
 
 
 def fig5():
-    """Tanimoto versus learned-embedding similarity and the random-embedding control."""
+    """Tanimoto versus learned-embedding similarity and the random-embedding control (drawn at print width)."""
     d = load("embedding_similarity.pkl")
-    fig, axes = plt.subplots(1, 2, figsize=(13.5, 5.4))
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.2))
     ax = axes[0]
-    ax.scatter(d["tani"], d["cos"], s=3, alpha=0.08, color="#4477AA", rasterized=True)
+    ax.scatter(d["tani"], d["cos"], s=1.2, alpha=0.06, color="#4477AA", linewidths=0, rasterized=True)
     lo, hi = d["bootstrap_ci_model"]
-    ax.set_xlabel("Tanimoto similarity (2,048-bit Morgan fingerprint)")
-    ax.set_ylabel("Cosine similarity in learned drug embeddings")
-    ax.set_title("A. Compound-pair similarity")
-    ax.text(0.03, 0.96, f"Spearman ρ = {d['spearman_r_model']:.3f} (95% bootstrap CI {lo:.3f}–{hi:.3f})",
-            transform=ax.transAxes, ha="left", va="top", fontsize=10,
-            bbox=dict(facecolor="white", edgecolor="none", alpha=0.82, pad=2.5))
-    ax.grid(alpha=0.25)
+    ax.text(0.04, 0.97, f"Spearman ρ = {d['spearman_r_model']:.3f}\n95% bootstrap CI {lo:.3f}–{hi:.3f}",
+            transform=ax.transAxes, ha="left", va="top", fontsize=7.5, linespacing=1.3,
+            bbox=dict(facecolor="white", edgecolor="none", alpha=0.85, pad=2))
+    ax.set_xlabel("Tanimoto similarity", fontsize=9)
+    ax.set_ylabel("Cosine similarity of drug embeddings", fontsize=9)
+    ax.set_title("A. Compound pairs", fontsize=9.5)
     ax.set_xlim(0, 1)
+    ax.tick_params(labelsize=8)
+    ax.grid(alpha=0.25)
 
     ax = axes[1]
-    x = np.arange(len(d["bin_centers"]))
-    ax.plot(x, d["bin_means_model"], marker="o", lw=2.2, color="#EE7733", label="Morgan fingerprint model")
-    ax.plot(x, d["bin_means_random"], marker="o", lw=2.0, color="#777777", label="Random-embedding control")
-    ax.set_xticks(x[::2])
-    ax.set_xticklabels([f"{v:.2f}" for v in d["bin_centers"][::2]])
-    ax.set_xlabel("Tanimoto similarity bin")
-    ax.set_ylabel("Mean cosine similarity")
-    ax.set_title("B. Mean embedding similarity by Tanimoto bin")
-    ax.legend()
+    centers, counts = d["bin_centers"], d["bin_counts"]
+    ax.errorbar(centers, d["bin_means_model"], yerr=d["bin_stds_model"], marker="o", ms=3.5, lw=1.5,
+                capsize=2, elinewidth=0.9, color="#EE7733", label="Morgan fingerprint model")
+    ax.errorbar(centers, d["bin_means_random"], yerr=d["bin_stds_random"], marker="o", ms=3.5, lw=1.3,
+                capsize=2, elinewidth=0.9, color="#777777", label="Random-embedding control")
+    for c, n in zip(centers, counts):
+        if n < 200:  # number of pairs in sparse bins, written just above the x-axis
+            ax.text(c, -0.055, f"{int(n)}", ha="center", va="top", fontsize=7, color="#7A3A12")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(-0.13, 1.08)
+    ax.set_xlabel("Tanimoto similarity (bin center)", fontsize=9)
+    ax.set_ylabel("Mean cosine similarity (± SE)", fontsize=9)
+    ax.set_title("B. Mean by Tanimoto bin", fontsize=9.5)
+    ax.tick_params(labelsize=8)
+    ax.legend(fontsize=7.5, loc="upper left", frameon=False)
     ax.grid(alpha=0.25)
-    fig.suptitle("Chemical-similarity structure in the learned drug-embedding space", fontsize=16, y=0.975)
-    fig.subplots_adjust(left=0.075, right=0.99, bottom=0.15, top=0.82, wspace=0.25)
+    fig.suptitle("Chemical-similarity structure in the learned drug-embedding space", fontsize=10.5, y=0.985)
+    fig.subplots_adjust(left=0.08, right=0.975, bottom=0.15, top=0.83, wspace=0.3)
     save("figure5_embedding_similarity")
 
 
